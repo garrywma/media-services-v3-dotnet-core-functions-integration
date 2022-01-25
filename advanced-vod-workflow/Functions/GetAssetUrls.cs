@@ -149,7 +149,7 @@ namespace advanced_vod_functions_v3
     }
     public static class GetAssetUrls2
     {
-        [FunctionName("GetAssetUrls")]
+        [FunctionName("GetAssetUrls2")]
         public static async Task<IActionResult> Run(
             [HttpTrigger(AuthorizationLevel.Function, "post", Route = null)] HttpRequest req,
             ILogger log)
