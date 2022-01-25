@@ -147,4 +147,86 @@ namespace advanced_vod_functions_v3
             return (ActionResult)new OkObjectResult(result);
         }
     }
+    public static class GetAssetUrls2
+    {
+        [FunctionName("GetAssetUrls")]
+        public static async Task<IActionResult> Run(
+            [HttpTrigger(AuthorizationLevel.Function, "post", Route = null)] HttpRequest req,
+            ILogger log)
+        {
+            log.LogInformation($"AMS v3 Function - GetAssetUrls was triggered!");
+
+            string requestBody = new StreamReader(req.Body).ReadToEnd();
+            dynamic data = JsonConvert.DeserializeObject(requestBody);
+
+            // Validate input objects
+            if (data.streamingLocatorName == null)
+                return new BadRequestObjectResult("Please pass streamingLocatorName in the input object");
+            string streamingLocatorName = data.streamingLocatorName;
+            string streamingEndpointName = "default";
+            if (data.streamingEndpointName != null)
+                streamingEndpointName = data.streamingEndpointName;
+            string streamingUrlScheme = "https";
+            if (data.streamingUrlScheme != null)
+            {
+                if (data.streamingUrlScheme.ToString().Equals("http") || data.streamingUrlScheme.ToString().Equals("https"))
+                    streamingUrlScheme = data.streamingUrlScheme;
+                else
+                    return new BadRequestObjectResult("Please pass streamingLocatorName in the input object");
+            }
+
+            MediaServicesConfigWrapper amsconfig = new MediaServicesConfigWrapper();
+
+            JArray downloadPaths = new JArray();
+            JArray streamingPaths = new JArray();
+            try
+            {
+                IAzureMediaServicesClient client = MediaServicesHelper.CreateMediaServicesClientAsync(amsconfig);
+
+                var paths = client.StreamingLocators.ListPaths(amsconfig.ResourceGroup, amsconfig.AccountName, streamingLocatorName);
+                var streamingEndpoint = client.StreamingEndpoints.Get(amsconfig.ResourceGroup, amsconfig.AccountName, streamingEndpointName);
+
+                foreach (var path in paths.DownloadPaths)
+                {
+                    UriBuilder uriBuilder = new UriBuilder();
+                    uriBuilder.Scheme = streamingUrlScheme;
+                    uriBuilder.Host = streamingEndpoint.HostName;
+                    uriBuilder.Path = path;
+                    downloadPaths.Add(uriBuilder.ToString());
+                }
+
+                foreach (var path in paths.StreamingPaths)
+                {
+                    UriBuilder uriBuilder = new UriBuilder();
+                    uriBuilder.Scheme = streamingUrlScheme;
+                    uriBuilder.Host = streamingEndpoint.HostName;
+
+                    if (path.Paths.Count > 0)
+                    {
+                        uriBuilder.Path = path.Paths[0];
+                        JObject p = new JObject();
+                        p["StreamingProtocol"] = path.StreamingProtocol.ToString();
+                        p["EncryptionScheme"] = path.EncryptionScheme.ToString();
+                        p["StreamingUrl"] = uriBuilder.ToString();
+                        streamingPaths.Add(p);
+                    }
+                }
+            }
+            catch (ApiErrorException e)
+            {
+                log.LogInformation($"ERROR: AMS API call failed with error code: {e.Body.Error.Code} and message: {e.Body.Error.Message}");
+                return new BadRequestObjectResult("AMS API call error: " + e.Message + "\nError Code: " + e.Body.Error.Code + "\nMessage: " + e.Body.Error.Message);
+            }
+            catch (Exception e)
+            {
+                log.LogInformation($"ERROR: Exception with message: {e.Message}");
+                return new BadRequestObjectResult("Error: " + e.Message);
+            }
+
+            JObject result = new JObject();
+            result["downloadPaths"] = downloadPaths;
+            result["streamingPaths"] = streamingPaths;
+            return (ActionResult)new OkObjectResult(result);
+        }
+    }
 }
