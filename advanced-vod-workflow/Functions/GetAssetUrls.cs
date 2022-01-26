@@ -170,10 +170,11 @@ namespace advanced_vod_functions_v3
                IAzureMediaServicesClient client = MediaServicesHelper.CreateMediaServicesClientAsync(amsconfig);
                var assetContainerSas = client.Assets.ListContainerSas(
                                     amsconfig.ResourceGroup, amsconfig.AccountName,
-                                    assetName,
+                                    data.assetName,
                                     permissions: AssetContainerPermission.Read,
                                     expiryTime: DateTime.UtcNow.AddHours(1).ToUniversalTime()
                                     );
+               return (ActionResult)new OkObjectResult(assetContainerSas);
             }
             catch (ApiErrorException e)
             {
@@ -186,7 +187,6 @@ namespace advanced_vod_functions_v3
                 return new BadRequestObjectResult("Error: " + e.Message);
             }
                   
-            return (ActionResult)new OkObjectResult(assetContainerSas);
         }
     }
 }
