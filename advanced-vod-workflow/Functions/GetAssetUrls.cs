@@ -170,7 +170,7 @@ namespace advanced_vod_functions_v3
                IAzureMediaServicesClient client = MediaServicesHelper.CreateMediaServicesClientAsync(amsconfig);
                var assetContainerSas = client.Assets.ListContainerSas(
                                     amsconfig.ResourceGroup, amsconfig.AccountName,
-                                    data.assetName,
+                                    (string)(data.assetName),
                                     permissions: AssetContainerPermission.Read,
                                     expiryTime: DateTime.UtcNow.AddHours(1).ToUniversalTime()
                                     );
