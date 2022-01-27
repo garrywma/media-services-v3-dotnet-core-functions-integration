@@ -174,7 +174,7 @@ namespace advanced_vod_functions_v3
                                     permissions: AssetContainerPermission.Read,
                                     expiryTime: DateTime.UtcNow.AddHours(1).ToUniversalTime()
                                     );
-               return (ActionResult)new OkObjectResult(assetContainerSas.AssetContainerSasUrls[0].Split('/')[3]);
+               return (ActionResult)new OkObjectResult(assetContainerSas.AssetContainerSasUrls[0].Split('/')[3].Split('?')[0]);
             }
             catch (ApiErrorException e)
             {
